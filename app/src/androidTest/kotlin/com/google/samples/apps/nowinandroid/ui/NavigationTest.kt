@@ -16,16 +16,16 @@
 
 package com.google.samples.apps.nowinandroid.ui
 
-import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsActions.ScrollBy
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -35,10 +35,10 @@ import androidx.test.espresso.Espresso
 import androidx.test.espresso.NoActivityResumedException
 import com.google.samples.apps.nowinandroid.MainActivity
 import com.google.samples.apps.nowinandroid.R
+import com.google.samples.apps.nowinandroid.core.data.repository.NewsRepository
 import com.google.samples.apps.nowinandroid.core.data.repository.TopicsRepository
 import com.google.samples.apps.nowinandroid.core.model.data.Topic
 import com.google.samples.apps.nowinandroid.core.rules.GrantPostNotificationsPermissionRule
-import dagger.hilt.android.testing.BindValue
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import kotlinx.coroutines.flow.first
@@ -46,12 +46,10 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.rules.TemporaryFolder
 import javax.inject.Inject
-import kotlin.properties.ReadOnlyProperty
 import com.google.samples.apps.nowinandroid.feature.bookmarks.R as BookmarksR
 import com.google.samples.apps.nowinandroid.feature.foryou.R as FeatureForyouR
-import com.google.samples.apps.nowinandroid.feature.interests.R as FeatureInterestsR
+import com.google.samples.apps.nowinandroid.feature.search.R as FeatureSearchR
 import com.google.samples.apps.nowinandroid.feature.settings.R as SettingsR
 
 /**
@@ -67,41 +65,33 @@ class NavigationTest {
     val hiltRule = HiltAndroidRule(this)
 
     /**
-     * Create a temporary folder used to create a Data Store file. This guarantees that
-     * the file is removed in between each test, preventing a crash.
-     */
-    @BindValue
-    @get:Rule(order = 1)
-    val tmpFolder: TemporaryFolder = TemporaryFolder.builder().assureDeletion().build()
-
-    /**
      * Grant [android.Manifest.permission.POST_NOTIFICATIONS] permission.
      */
-    @get:Rule(order = 2)
+    @get:Rule(order = 1)
     val postNotificationsPermission = GrantPostNotificationsPermissionRule()
 
     /**
      * Use the primary activity to initialize the app normally.
      */
-    @get:Rule(order = 3)
+    @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Inject
     lateinit var topicsRepository: TopicsRepository
 
-    private fun AndroidComposeTestRule<*, *>.stringResource(@StringRes resId: Int) =
-        ReadOnlyProperty<Any?, String> { _, _ -> activity.getString(resId) }
+    @Inject
+    lateinit var newsRepository: NewsRepository
 
     // The strings used for matching in these tests
-    private val navigateUp by composeTestRule.stringResource(FeatureForyouR.string.navigate_up)
-    private val forYou by composeTestRule.stringResource(FeatureForyouR.string.for_you)
-    private val interests by composeTestRule.stringResource(FeatureInterestsR.string.interests)
+    private val navigateUp by composeTestRule.stringResource(FeatureForyouR.string.feature_foryou_navigate_up)
+    private val forYou by composeTestRule.stringResource(FeatureForyouR.string.feature_foryou_title)
+    private val interests by composeTestRule.stringResource(FeatureSearchR.string.feature_search_interests)
     private val sampleTopic = "Headlines"
     private val appName by composeTestRule.stringResource(R.string.app_name)
-    private val saved by composeTestRule.stringResource(BookmarksR.string.saved)
-    private val settings by composeTestRule.stringResource(SettingsR.string.top_app_bar_action_icon_description)
-    private val brand by composeTestRule.stringResource(SettingsR.string.brand_android)
-    private val ok by composeTestRule.stringResource(SettingsR.string.dismiss_dialog_button_text)
+    private val saved by composeTestRule.stringResource(BookmarksR.string.feature_bookmarks_title)
+    private val settings by composeTestRule.stringResource(SettingsR.string.feature_settings_top_app_bar_action_icon_description)
+    private val brand by composeTestRule.stringResource(SettingsR.string.feature_settings_brand_android)
+    private val ok by composeTestRule.stringResource(SettingsR.string.feature_settings_dismiss_dialog_button_text)
 
     @Before
     fun setup() = hiltRule.inject()
@@ -166,7 +156,10 @@ class NavigationTest {
         composeTestRule.apply {
             // GIVEN the user is on any of the top level destinations, THEN the Up arrow is not shown.
             onNodeWithContentDescription(navigateUp).assertDoesNotExist()
-            // TODO: Add top level destinations here, see b/226357686.
+
+            onNodeWithText(saved).performClick()
+            onNodeWithContentDescription(navigateUp).assertDoesNotExist()
+
             onNodeWithText(interests).performClick()
             onNodeWithContentDescription(navigateUp).assertDoesNotExist()
         }
@@ -222,12 +215,7 @@ class NavigationTest {
             onNodeWithText(ok).performClick()
 
             // Check that the saved screen is still visible and selected.
-            onNode(
-                hasText(saved) and
-                    hasAnyAncestor(
-                        hasTestTag("NiaBottomBar") or hasTestTag("NiaNavRail"),
-                    ),
-            ).assertIsSelected()
+            onNode(hasText(saved) and hasTestTag("NiaNavItem")).assertIsSelected()
         }
     }
 
@@ -271,10 +259,10 @@ class NavigationTest {
 
             // Select the last topic
             val topic = runBlocking {
-                topicsRepository.getTopics().first().sortedBy(Topic::name).last().name
+                topicsRepository.getTopics().first().sortedBy(Topic::name).last()
             }
-            onNodeWithTag("interests:topics").performScrollToNode(hasText(topic))
-            onNodeWithText(topic).performClick()
+            onNodeWithTag("interests:topics").performScrollToNode(hasText(topic.name))
+            onNodeWithText(topic.name).performClick()
 
             // Switch tab
             onNodeWithText(forYou).performClick()
@@ -282,8 +270,48 @@ class NavigationTest {
             // Come back to Interests
             onNodeWithText(interests).performClick()
 
-            // Verify we're not in the list of interests
-            onNodeWithTag("interests:topics").assertDoesNotExist()
+            // Verify the topic is still shown
+            onNodeWithTag("topic:${topic.id}").assertExists()
+        }
+    }
+
+    @Test
+    fun navigatingToTopicFromForYou_showsTopicDetails() {
+        composeTestRule.apply {
+            // Get the first news resource
+            val newsResource = runBlocking {
+                newsRepository.getNewsResources().first().first()
+            }
+
+            // Get its first topic and follow it
+            val topic = newsResource.topics.first()
+            onNodeWithText(topic.name).performClick()
+
+            // Get the news feed and scroll to the news resource
+            // Note: Possible flakiness. If the content of the news resource is long then the topic
+            // tag might not be visible meaning it cannot be clicked
+            onNodeWithTag("forYou:feed")
+                .performScrollToNode(hasTestTag("newsResourceCard:${newsResource.id}"))
+                .fetchSemanticsNode()
+                .apply {
+                    val newsResourceCardNode = onNodeWithTag("newsResourceCard:${newsResource.id}")
+                        .fetchSemanticsNode()
+                    config[ScrollBy].action?.invoke(
+                        0f,
+                        // to ensure the bottom of the card is visible,
+                        // manually scroll the difference between the height of
+                        // the scrolling node and the height of the card
+                        (newsResourceCardNode.size.height - size.height).coerceAtLeast(0).toFloat(),
+                    )
+                }
+
+            // Click the first topic tag
+            onAllNodesWithTag("topicTag:${topic.id}", useUnmergedTree = true)
+                .onFirst()
+                .performClick()
+
+            // Verify that we're on the correct topic details screen
+            onNodeWithTag("topic:${topic.id}").assertExists()
         }
     }
 }
