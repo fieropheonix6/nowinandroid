@@ -17,7 +17,7 @@
 package com.google.samples.apps.nowinandroid.feature.foryou
 
 import androidx.activity.ComponentActivity
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -45,14 +45,14 @@ class ForYouScreenTest {
 
     private val doneButtonMatcher by lazy {
         hasText(
-            composeTestRule.activity.resources.getString(R.string.done),
+            composeTestRule.activity.resources.getString(R.string.feature_foryou_done),
         )
     }
 
     @Test
     fun circularProgressIndicator_whenScreenIsLoading_exists() {
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = false,
                     onboardingUiState = OnboardingUiState.Loading,
@@ -70,7 +70,7 @@ class ForYouScreenTest {
 
         composeTestRule
             .onNodeWithContentDescription(
-                composeTestRule.activity.resources.getString(R.string.for_you_loading),
+                composeTestRule.activity.resources.getString(R.string.feature_foryou_loading),
             )
             .assertExists()
     }
@@ -78,7 +78,7 @@ class ForYouScreenTest {
     @Test
     fun circularProgressIndicator_whenScreenIsSyncing_exists() {
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = true,
                     onboardingUiState = OnboardingUiState.NotShown,
@@ -96,7 +96,7 @@ class ForYouScreenTest {
 
         composeTestRule
             .onNodeWithContentDescription(
-                composeTestRule.activity.resources.getString(R.string.for_you_loading),
+                composeTestRule.activity.resources.getString(R.string.feature_foryou_loading),
             )
             .assertExists()
     }
@@ -106,7 +106,7 @@ class ForYouScreenTest {
         val testData = followableTopicTestData.map { it.copy(isFollowed = false) }
 
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = false,
                     onboardingUiState = OnboardingUiState.Shown(
@@ -149,7 +149,7 @@ class ForYouScreenTest {
     @Test
     fun topicSelector_whenSomeTopicsSelected_showsTopicChipsAndEnabledDoneButton() {
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = false,
                     onboardingUiState =
@@ -196,7 +196,7 @@ class ForYouScreenTest {
     @Test
     fun feed_whenInterestsSelectedAndLoading_showsLoadingIndicator() {
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = false,
                     onboardingUiState =
@@ -215,7 +215,7 @@ class ForYouScreenTest {
 
         composeTestRule
             .onNodeWithContentDescription(
-                composeTestRule.activity.resources.getString(R.string.for_you_loading),
+                composeTestRule.activity.resources.getString(R.string.feature_foryou_loading),
             )
             .assertExists()
     }
@@ -223,7 +223,7 @@ class ForYouScreenTest {
     @Test
     fun feed_whenNoInterestsSelectionAndLoading_showsLoadingIndicator() {
         composeTestRule.setContent {
-            BoxWithConstraints {
+            Box {
                 ForYouScreen(
                     isSyncing = false,
                     onboardingUiState = OnboardingUiState.NotShown,
@@ -241,7 +241,7 @@ class ForYouScreenTest {
 
         composeTestRule
             .onNodeWithContentDescription(
-                composeTestRule.activity.resources.getString(R.string.for_you_loading),
+                composeTestRule.activity.resources.getString(R.string.feature_foryou_loading),
             )
             .assertExists()
     }

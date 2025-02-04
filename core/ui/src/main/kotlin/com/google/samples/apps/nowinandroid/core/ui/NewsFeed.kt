@@ -21,7 +21,6 @@ import android.net.Uri
 import androidx.annotation.ColorInt
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridScope
@@ -30,9 +29,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -48,7 +44,6 @@ import com.google.samples.apps.nowinandroid.core.model.data.UserNewsResource
  * An extension on [LazyListScope] defining a feed with news resources.
  * Depending on the [feedState], this might emit no items.
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun LazyStaggeredGridScope.newsFeed(
     feedState: NewsFeedUiState,
     onNewsResourcesCheckedChanged: (String, Boolean) -> Unit,
@@ -64,9 +59,6 @@ fun LazyStaggeredGridScope.newsFeed(
                 key = { it.id },
                 contentType = { "newsFeedItem" },
             ) { userNewsResource ->
-                val resourceUrl by remember {
-                    mutableStateOf(Uri.parse(userNewsResource.url))
-                }
                 val context = LocalContext.current
                 val analyticsHelper = LocalAnalyticsHelper.current
                 val backgroundColor = MaterialTheme.colorScheme.background.toArgb()
@@ -79,7 +71,8 @@ fun LazyStaggeredGridScope.newsFeed(
                         analyticsHelper.logNewsResourceOpened(
                             newsResourceId = userNewsResource.id,
                         )
-                        launchCustomChromeTab(context, resourceUrl, backgroundColor)
+                        launchCustomChromeTab(context, Uri.parse(userNewsResource.url), backgroundColor)
+
                         onNewsResourceViewed(userNewsResource.id)
                     },
                     hasBeenViewed = userNewsResource.hasBeenViewed,
@@ -92,7 +85,7 @@ fun LazyStaggeredGridScope.newsFeed(
                     onTopicClick = onTopicClick,
                     modifier = Modifier
                         .padding(horizontal = 8.dp)
-                        .animateItemPlacement(),
+                        .animateItem(),
                 )
             }
         }

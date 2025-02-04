@@ -15,8 +15,7 @@
  */
 plugins {
     alias(libs.plugins.nowinandroid.android.library)
-    alias(libs.plugins.nowinandroid.android.library.compose)
-    alias(libs.plugins.nowinandroid.android.hilt)
+    alias(libs.plugins.nowinandroid.hilt)
 }
 
 android {
@@ -24,14 +23,9 @@ android {
 }
 
 dependencies {
+    api(projects.core.model)
+
     implementation(projects.core.common)
-    implementation(projects.core.model)
 
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.androidx.browser)
-    implementation(libs.androidx.compose.runtime)
-    implementation(libs.androidx.core.ktx)
-
-    implementation(platform(libs.firebase.bom))
-    implementation(libs.firebase.cloud.messaging)
+    compileOnly(platform(libs.androidx.compose.bom))
 }
